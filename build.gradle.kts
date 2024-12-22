@@ -26,10 +26,31 @@ allprojects {
     }
 }
 
+object Versions {
+    const val KTOR_CLIENT = "3.0.3"
+    const val COROUTINES = "1.9.0"
+}
+
 dependencies {
+    // kotlin
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+    // spring boot
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+    // coroutine
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.COROUTINES}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:${Versions.COROUTINES}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:${Versions.COROUTINES}")
+
+    // ktor
+    implementation("io.ktor:ktor-client-core:${Versions.KTOR_CLIENT}")
+    implementation("io.ktor:ktor-client-cio:${Versions.KTOR_CLIENT}")
+    implementation("io.ktor:ktor-client-content-negotiation:${Versions.KTOR_CLIENT}")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:${Versions.KTOR_CLIENT}")
+
+    // test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
