@@ -1,8 +1,11 @@
+import org.jlleitschuh.gradle.ktlint.KtlintExtension
+
 plugins {
     kotlin("jvm") version "1.9.25"
     kotlin("plugin.spring") version "1.9.25"
     id("org.springframework.boot") version "3.4.1"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
 }
 
 group = "com"
@@ -14,8 +17,13 @@ java {
     }
 }
 
-repositories {
-    mavenCentral()
+allprojects {
+    apply(plugin = "idea")
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+
+    repositories {
+        mavenCentral()
+    }
 }
 
 dependencies {
@@ -35,4 +43,13 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask> {
+    workerMaxHeapSize.set("512m")
+}
+
+configure<KtlintExtension> {
+    version.set("0.50.0")
+    enableExperimentalRules.set(true)
 }
