@@ -3,6 +3,7 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 plugins {
     kotlin("jvm") version "1.9.25"
     kotlin("plugin.spring") version "1.9.25"
+    kotlin("plugin.serialization") version "1.9.25"
     id("org.springframework.boot") version "3.4.1"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
@@ -34,6 +35,7 @@ object Versions {
 dependencies {
     // kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // spring boot
     implementation("org.springframework.boot:spring-boot-starter")
