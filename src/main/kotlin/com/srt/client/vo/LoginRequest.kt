@@ -1,4 +1,4 @@
-package com.srt.client
+package com.srt.client.vo
 
 data class LoginRequest(
     val rsvTpCd: String = "",
