@@ -1,7 +1,9 @@
 package com.srt.service
 
+import com.srt.exception.InvalidTokenException
 import com.srt.service.vo.SrtSessionKey
 import com.srt.util.now
+import io.jsonwebtoken.JwtParser
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
@@ -27,26 +29,29 @@ class JwtProvider(
 
     fun verifyToken(token: String): Boolean {
         return try {
-            val claims = Jwts.parser()
-                .verifyWith(Keys.hmacShaKeyFor(secretKey.toByteArray()))
-                .build()
-                .parseSignedClaims(token)
-            claims.payload.expiration.after(now())
+            val claims = buildParser().parseSignedClaims(token).payload
+            claims.expiration.after(now())
         } catch (e: Exception) {
             false
         }
     }
 
     fun parseToken(token: String): SrtSessionKey {
-        val claims = Jwts.parser()
+        try {
+            val claims = buildParser().parseSignedClaims(token).payload
+            return SrtSessionKey(
+                sessionId = claims[SESSION_ID] as String,
+                netFunnelKey = claims[NET_FUNNEL_KEY] as String,
+            )
+        } catch (ex: Exception) {
+            throw InvalidTokenException("로그인 정보가 잘못되었습니다.")
+        }
+    }
+
+    private fun buildParser(): JwtParser {
+        return Jwts.parser()
             .verifyWith(Keys.hmacShaKeyFor(secretKey.toByteArray()))
             .build()
-            .parseSignedClaims(token)
-            .payload
-        return SrtSessionKey(
-            sessionId = claims[SESSION_ID] as String,
-            netFunnelKey = claims[NET_FUNNEL_KEY] as String,
-        )
     }
 
     companion object {
