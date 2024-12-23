@@ -1,3 +1,6 @@
 server:
   shutdown: graceful
   port: 8010
+
+jwt:
+  secret-key: "dev-secret-key" # secrets manager
