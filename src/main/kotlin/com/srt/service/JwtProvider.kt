@@ -27,12 +27,14 @@ class JwtProvider(
             .compact()
     }
 
-    fun verifyToken(token: String): Boolean {
-        return try {
+    fun verifyToken(token: String) {
+        try {
             val claims = buildParser().parseSignedClaims(token).payload
-            claims.expiration.after(now())
-        } catch (e: Exception) {
-            false
+            if (claims.expiration.before(now())) {
+                throw InvalidTokenException("로그인 세션이 만료되었습니다.")
+            }
+        } catch (ex: Exception) {
+            throw InvalidTokenException("로그인 정보가 잘못되었습니다. 다시 로그인을 해주세요.", ex)
         }
     }
 
