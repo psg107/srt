@@ -5,6 +5,7 @@ import com.srt.configuration.TokenAttribute.AUTHORIZATION_HEADER_PREFIX
 import com.srt.configuration.TokenAttribute.TOKEN_ATTRIBUTE_NAME
 import com.srt.exception.AuthorizationFailedException
 import com.srt.service.JwtProvider
+import com.srt.service.vo.SrtSessionKey
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.web.method.HandlerMethod
@@ -21,8 +22,8 @@ class TokenInterceptor(
         if (handler.method.isAnnotationPresent(LoginRequired::class.java)) {
             request.extractTokenFromAuthorizationHeader()?.also {
                 jwtProvider.verifyToken(it)
-            }?.let {
-                setTokenToAttribute(request, it)
+            }?.let { token ->
+                setTokenToAttribute(request, token, jwtProvider.parseToken(token))
             } ?: throw AuthorizationFailedException("로그인이 필요합니다.")
         }
 
@@ -35,10 +36,14 @@ class TokenInterceptor(
         )
     }
 
-    private fun setTokenToAttribute(request: HttpServletRequest, token: String) {
+    private fun setTokenToAttribute(request: HttpServletRequest, token: String, srtSessionKey: SrtSessionKey) {
         request.setAttribute(
             TOKEN_ATTRIBUTE_NAME,
-            TokenHolder(token),
+            TokenHolder(
+                token = token,
+                sessionId = srtSessionKey.sessionId,
+                netFunnelKey = srtSessionKey.netFunnelKey,
+            ),
         )
     }
 }
