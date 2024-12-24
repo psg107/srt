@@ -1,6 +1,6 @@
 package com.srt.client.vo
 
-data class LoginRequest(
+internal data class LoginRequest(
     val rsvTpCd: String = "",
     val goUrl: String = "",
     val from: String = "",
