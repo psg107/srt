@@ -1,10 +1,13 @@
 package com.srt.api
 
+import com.srt.api.vo.GetTicketListRequest
+import com.srt.api.vo.GetTicketListResponse
 import com.srt.api.vo.LoginRequest
 import com.srt.api.vo.LoginResponse
 import com.srt.configuration.LoginRequired
 import com.srt.configuration.TokenHolder
 import com.srt.service.SrtService
+import org.springdoc.core.annotations.ParameterObject
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -21,14 +24,18 @@ class SrtController(
     suspend fun login(@RequestBody loginRequest: LoginRequest): ResponseEntity<LoginResponse> {
         return ResponseEntity.ok(
             LoginResponse(
-                srtService.login(loginRequest.toAccount()),
+                srtService.login(loginRequest.toCommand()),
             ),
         )
     }
 
     @LoginRequired
     @GetMapping("/list")
-    fun list(tokenHolder: TokenHolder): String {
-        TODO()
+    suspend fun list(@ParameterObject request: GetTicketListRequest, tokenHolder: TokenHolder): ResponseEntity<GetTicketListResponse> {
+        return ResponseEntity.ok(
+            GetTicketListResponse(
+                srtService.list(request.toQuery(), tokenHolder),
+            ),
+        )
     }
 }

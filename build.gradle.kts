@@ -30,6 +30,7 @@ allprojects {
 object Versions {
     const val KTOR_CLIENT = "3.0.3"
     const val COROUTINES = "1.9.0"
+    const val SPRINGDOC = "2.7.0"
 }
 
 dependencies {
@@ -40,6 +41,9 @@ dependencies {
     // spring boot
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${Versions.SPRINGDOC}")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:${Versions.SPRINGDOC}")
+    implementation("org.springdoc:springdoc-openapi-starter-common:${Versions.SPRINGDOC}")
 
     // coroutine
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.COROUTINES}")

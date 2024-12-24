@@ -1,8 +1,11 @@
 package com.srt.client
 
 import com.srt.client.vo.GetNetFunnelKeyRequest
+import com.srt.client.vo.GetTicketListRequest
 import com.srt.client.vo.LoginRequest
 import com.srt.client.vo.LoginResponse
+import com.srt.code.StationCodes
+import com.srt.configuration.TokenHolder
 import com.srt.util.toFormUrlEncodedString
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -45,6 +48,55 @@ class SrtClient(
             Regex("key=(.+?)&").find(it)?.groupValues?.get(1)
                 ?: throw RuntimeException("NetFunnelKey를 가져올 수 없습니다.")
         }
+    }
+
+    suspend fun getTicketList(
+        departureDate: String,
+        departureTime: String,
+        departureStationCode: StationCodes,
+        arrivalStationCode: StationCodes,
+        passengerNumber: Int,
+        tokenHolder: TokenHolder,
+    ): List<String> {
+        // TODO: 정상적인 경로로 접근 부탁드립니다. 오류 발생함, netFunnelKey, JSESSIONID_ETK 외 추가적으로 필요한 정보가 있음
+        return httpClient.post("$BASE_URL/ara/selectListAra10007_n.do") {
+            setDefaultUserAgent()
+            contentType(ContentType.Application.FormUrlEncoded)
+            accept(ContentType.Application.Json)
+            cookie("JSESSIONID_ETK", tokenHolder.sessionId)
+            setBody(
+                GetTicketListRequest.create(
+                    departureDate = departureDate,
+                    departureTime = departureTime,
+                    departureStationCode = departureStationCode,
+                    arrivalStationCode = arrivalStationCode,
+                    passengerNumber = passengerNumber,
+                    netFunnelKey = tokenHolder.netFunnelKey,
+                ).toFormUrlEncodedString(),
+            )
+        }.body<String>().let {
+            println(it)
+            emptyList<String>()
+        }
+//        return httpClient.post("$BASE_URL/ara/selectListAra10007_n.do") {
+//            setDefaultUserAgent()
+//            contentType(ContentType.Application.FormUrlEncoded)
+//            accept(ContentType.Application.Json)
+//            cookie("JSESSIONID_ETK", tokenHolder.sessionId)
+//            setBody(GetTicketListRequest.create(
+//                departureDate = departureDate,
+//                departureTime = departureTime,
+//                departureStationCode = departureStationCode,
+//                arrivalStationCode = arrivalStationCode,
+//                passengerNumber = passengerNumber,
+//                netFunnelKey = tokenHolder.netFunnelKey,
+//            ).toFormUrlEncodedString())
+//        }.body<GetTicketListResponse>().let {
+//            if (it.isSuccess.not()) {
+//                throw RuntimeException("티켓 목록을 가져올 수 없습니다.")
+//            }
+//            it.tickets
+//        }
     }
 
     private fun HttpMessageBuilder.setDefaultUserAgent(): HttpMessageBuilder {

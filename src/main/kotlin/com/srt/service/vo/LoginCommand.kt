@@ -1,6 +1,6 @@
 package com.srt.service.vo
 
-data class Account(
+data class LoginCommand(
     val id: String,
     val password: String,
 )
