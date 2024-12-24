@@ -1,6 +1,8 @@
 package com.srt.configuration
 
-import com.srt.configuration.WebMvcConfiguration.Companion.AUTHORIZATION_HEADER_PREFIX
+import com.srt.configuration.TokenAttribute.AUTHORIZATION_HEADER
+import com.srt.configuration.TokenAttribute.AUTHORIZATION_HEADER_PREFIX
+import com.srt.configuration.TokenAttribute.TOKEN_ATTRIBUTE_NAME
 import com.srt.exception.AuthorizationFailedException
 import com.srt.service.JwtProvider
 import jakarta.servlet.http.HttpServletRequest
@@ -28,17 +30,15 @@ class TokenInterceptor(
     }
 
     private fun HttpServletRequest.extractTokenFromAuthorizationHeader(): String? {
-        return this.getHeader("Authorization")?.takeIf { it.startsWith(AUTHORIZATION_HEADER_PREFIX) }?.substring(
+        return this.getHeader(AUTHORIZATION_HEADER)?.takeIf { it.startsWith(AUTHORIZATION_HEADER_PREFIX) }?.substring(
             AUTHORIZATION_HEADER_PREFIX.length,
         )
     }
 
     private fun setTokenToAttribute(request: HttpServletRequest, token: String) {
         request.setAttribute(
-            "token",
-            TokenHolder(
-                token = token,
-            ),
+            TOKEN_ATTRIBUTE_NAME,
+            TokenHolder(token),
         )
     }
 }

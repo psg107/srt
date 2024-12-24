@@ -23,9 +23,4 @@ class WebMvcConfiguration(
     }
 
     fun tokenInterceptor(): TokenInterceptor = TokenInterceptor(jwtProvider)
-
-    companion object {
-        const val AUTHORIZATION_HEADER_PREFIX = "Bearer "
-        const val TOKEN_ATTRIBUTE_NAME = "token"
-    }
 }

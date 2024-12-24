@@ -1,6 +1,6 @@
 package com.srt.configuration
 
-import com.srt.configuration.WebMvcConfiguration.Companion.TOKEN_ATTRIBUTE_NAME
+import com.srt.configuration.TokenAttribute.TOKEN_ATTRIBUTE_NAME
 import org.springframework.core.MethodParameter
 import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
