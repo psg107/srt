@@ -3,6 +3,7 @@ package com.srt.util
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
 
+@Suppress("UNCHECKED_CAST")
 fun Any.toFormUrlEncodedString(): String {
     val memberProperties = this::class.memberProperties as Collection<KProperty1<Any, *>>
     return memberProperties

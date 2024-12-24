@@ -18,6 +18,7 @@ class KtorClientConfiguration {
                     Json {
                         ignoreUnknownKeys = true
                         isLenient = true
+                        encodeDefaults = false
                     },
                 )
             }

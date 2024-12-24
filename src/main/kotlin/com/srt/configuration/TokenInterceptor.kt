@@ -2,10 +2,11 @@ package com.srt.configuration
 
 import com.srt.configuration.TokenAttribute.AUTHORIZATION_HEADER
 import com.srt.configuration.TokenAttribute.AUTHORIZATION_HEADER_PREFIX
-import com.srt.configuration.TokenAttribute.TOKEN_ATTRIBUTE_NAME
+import com.srt.configuration.TokenAttribute.SRT_SESSION_KEY_ATTRIBUTE_NAME
 import com.srt.exception.AuthorizationFailedException
 import com.srt.service.JwtProvider
-import com.srt.service.vo.SrtSessionKey
+import com.srt.service.vo.SrtSession
+import com.srt.share.value.JsonWebToken
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.web.method.HandlerMethod
@@ -23,27 +24,23 @@ class TokenInterceptor(
             request.extractTokenFromAuthorizationHeader()?.also {
                 jwtProvider.verifyToken(it)
             }?.let { token ->
-                setTokenToAttribute(request, token, jwtProvider.parseToken(token))
+                setTokenToAttribute(request, jwtProvider.parseToken(token))
             } ?: throw AuthorizationFailedException("로그인이 필요합니다.")
         }
 
         return super.preHandle(request, response, handler)
     }
 
-    private fun HttpServletRequest.extractTokenFromAuthorizationHeader(): String? {
+    private fun HttpServletRequest.extractTokenFromAuthorizationHeader(): JsonWebToken? {
         return this.getHeader(AUTHORIZATION_HEADER)?.takeIf { it.startsWith(AUTHORIZATION_HEADER_PREFIX) }?.substring(
             AUTHORIZATION_HEADER_PREFIX.length,
-        )
+        )?.let { JsonWebToken(it) }
     }
 
-    private fun setTokenToAttribute(request: HttpServletRequest, token: String, srtSessionKey: SrtSessionKey) {
+    private fun setTokenToAttribute(request: HttpServletRequest, srtSession: SrtSession) {
         request.setAttribute(
-            TOKEN_ATTRIBUTE_NAME,
-            TokenHolder(
-                token = token,
-                sessionId = srtSessionKey.sessionId,
-                netFunnelKey = srtSessionKey.netFunnelKey,
-            ),
+            SRT_SESSION_KEY_ATTRIBUTE_NAME,
+            srtSession,
         )
     }
 }
