@@ -114,6 +114,7 @@ class SrtClient(
 
     private fun HttpMessageBuilder.setDefaultUserAgent(): HttpMessageBuilder {
         userAgent("Mozilla/5.0 (Linux; Android 11; SM-G977N Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/92.0.4515.159 Mobile Safari/537.36SRT-APP-Android V.2.0.4")
+        headers.append("X-Requested-With", "kr.co.srail.newapp")
         return this
     }
 
