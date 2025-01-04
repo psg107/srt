@@ -4,6 +4,11 @@ import com.srt.client.vo.GetNetFunnelKeyRequest
 import com.srt.client.vo.GetTicketListRequest
 import com.srt.client.vo.GetTicketListResponse
 import com.srt.client.vo.LoginRequest
+import com.srt.service.JwtProvider.Companion.MEMBER_NUMBER
+import com.srt.service.JwtProvider.Companion.SESSION_ID
+import com.srt.service.JwtProvider.Companion.SRAIL_TYPE10
+import com.srt.service.JwtProvider.Companion.SRAIL_TYPE8
+import com.srt.service.JwtProvider.Companion.WMONID
 import com.srt.service.vo.SrtSession
 import com.srt.service.vo.Ticket
 import com.srt.share.code.StationCodes
@@ -42,10 +47,11 @@ class SrtClient(
             }
         }.cookies.let { cookies ->
             SrtSession(
-                sessionId = cookies.getByName("JSESSIONID_XEBEC").value,
-                wmonid = cookies.getByName("WMONID").value,
-                srail_type10 = cookies.getByName("srail_type10", { it.value != "NULL" }).value,
-                srail_type8 = cookies.getByName("srail_type8", { it.value != "Y" }).value,
+                sessionId = cookies.getByName(SESSION_ID).value,
+                wmonid = cookies.getByName(WMONID).value,
+                srail_type10 = cookies.getByName(SRAIL_TYPE10, { it.value != "NULL" }).value,
+                srail_type8 = cookies.getByName(SRAIL_TYPE8, { it.value != "Y" }).value,
+                memberNumber = cookies.getByName(MEMBER_NUMBER).value,
             )
         }
     }
@@ -93,7 +99,7 @@ class SrtClient(
                 log.warn("티켓 목록 조회 시 쿠키가 반환되었습니다. - ${it.cookies}")
             }
         }.let {
-            val sessionId = SessionId((it.cookies.findByName("JSESSIONID_XEBEC")?.value ?: session.sessionId))
+            val sessionId = SessionId((it.cookies.findByName(SESSION_ID)?.value ?: session.sessionId))
             val tickets = it.body.trainListMap.map { it.toTicket() }
 
             sessionId to tickets
@@ -112,10 +118,11 @@ class SrtClient(
     }
 
     private fun HttpMessageBuilder.setAuthenticationCookies(session: SrtSession): HttpMessageBuilder {
-        cookie("JSESSIONID_XEBEC", session.sessionId)
-        cookie("WMONID", session.wmonid)
-        cookie("srail_type10", session.srail_type10)
-        cookie("srail_type8", session.srail_type8)
+        cookie(SESSION_ID, session.sessionId)
+        cookie(WMONID, session.wmonid)
+        cookie(SRAIL_TYPE10, session.srail_type10)
+        cookie(SRAIL_TYPE8, session.srail_type8)
+        cookie(MEMBER_NUMBER, session.memberNumber)
         return this
     }
 

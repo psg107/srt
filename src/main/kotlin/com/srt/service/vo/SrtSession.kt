@@ -5,6 +5,7 @@ data class SrtSession(
     val wmonid: String,
     val srail_type10: String,
     val srail_type8: String,
+    val memberNumber: String,
     var netFunnelKey: String? = null,
 ) {
     fun updateSessionId(sessionId: String) = apply {
