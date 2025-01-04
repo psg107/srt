@@ -9,15 +9,25 @@ import io.ktor.client.statement.request
 import io.ktor.http.Cookie
 import io.ktor.http.setCookie
 
-suspend inline fun <reified T> HttpClient.requestPost(url: String, crossinline block: HttpRequestBuilder.() -> Unit = {}): PostResult<T> {
-    return this.post(url) {
-        block()
-    }.let {
+suspend inline fun <reified T> HttpClient.requestPost(
+    url: String,
+    crossinline block: HttpRequestBuilder.() -> Unit = {},
+): PostResult<T> {
+    var rawBody = ""
+
+    return try {
+        val response = this.post(url) {
+            block()
+        }
+        rawBody = response.body<String>()
+
         PostResult(
-            request = it.request,
-            body = it.body(),
-            cookies = it.setCookie().map { SimpleCookie.of(it) },
+            request = response.request,
+            body = response.body<T>(),
+            cookies = response.setCookie().map { SimpleCookie.of(it) },
         )
+    } catch (ex: Exception) {
+        throw RuntimeException("요청 처리 중 예기치 않은 오류가 발생했습니다. - $rawBody", ex)
     }
 }
 
