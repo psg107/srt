@@ -1,4 +1,4 @@
-package com.srt.code
+package com.srt.share.code
 
 enum class StationCodes(val description: String, val code: String) {
     STATION_CODE_0551("수서", "0551"),

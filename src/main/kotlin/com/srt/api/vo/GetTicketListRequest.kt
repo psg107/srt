@@ -1,7 +1,7 @@
 package com.srt.api.vo
 
-import com.srt.code.StationCodes
 import com.srt.service.vo.GetTicketListQuery
+import com.srt.share.code.StationCodes
 
 data class GetTicketListRequest(
     val departureDate: String,

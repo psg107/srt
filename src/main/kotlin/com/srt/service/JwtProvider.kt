@@ -1,7 +1,8 @@
 package com.srt.service
 
 import com.srt.exception.InvalidTokenException
-import com.srt.service.vo.SrtSessionKey
+import com.srt.service.vo.SrtSession
+import com.srt.share.value.JsonWebToken
 import com.srt.util.now
 import io.jsonwebtoken.JwtParser
 import io.jsonwebtoken.Jwts
@@ -13,23 +14,27 @@ import org.springframework.stereotype.Service
 class JwtProvider(
     @Value("\${jwt.secret-key}") private val secretKey: String,
 ) {
-    fun createToken(srtSessionKey: SrtSessionKey): String {
+    fun createToken(srtSession: SrtSession): JsonWebToken {
         return Jwts.builder()
             .claims(
                 mapOf(
-                    SESSION_ID to srtSessionKey.sessionId,
-                    NET_FUNNEL_KEY to srtSessionKey.netFunnelKey,
+                    SESSION_ID to srtSession.sessionId,
+                    WMONID to srtSession.wmonid,
+                    SRAIL_TYPE10 to srtSession.srail_type10,
+                    SRAIL_TYPE8 to srtSession.srail_type8,
+                    NET_FUNNEL_KEY to srtSession.netFunnelKey,
                 ),
             )
             .issuedAt(now())
             .expiration(now(TOKEN_EXPIRATION_TIME))
             .signWith(Keys.hmacShaKeyFor(secretKey.toByteArray()))
             .compact()
+            .let(::JsonWebToken)
     }
 
-    fun verifyToken(token: String) {
+    fun verifyToken(token: JsonWebToken) {
         try {
-            val claims = buildParser().parseSignedClaims(token).payload
+            val claims = buildParser().parseSignedClaims(token.token).payload
             if (claims.expiration.before(now())) {
                 throw InvalidTokenException("로그인 세션이 만료되었습니다.")
             }
@@ -38,11 +43,14 @@ class JwtProvider(
         }
     }
 
-    fun parseToken(token: String): SrtSessionKey {
+    fun parseToken(token: JsonWebToken): SrtSession {
         try {
-            val claims = buildParser().parseSignedClaims(token).payload
-            return SrtSessionKey(
+            val claims = buildParser().parseSignedClaims(token.token).payload
+            return SrtSession(
                 sessionId = claims[SESSION_ID] as String,
+                wmonid = claims[WMONID] as String,
+                srail_type10 = claims[SRAIL_TYPE10] as String,
+                srail_type8 = claims[SRAIL_TYPE8] as String,
                 netFunnelKey = claims[NET_FUNNEL_KEY] as String,
             )
         } catch (ex: Exception) {
@@ -59,6 +67,9 @@ class JwtProvider(
     companion object {
         const val TOKEN_EXPIRATION_TIME = 1000 * 60 * 60 // 1시간
         const val SESSION_ID = "sessionId"
+        const val WMONID = "wmonid"
+        const val SRAIL_TYPE10 = "srail_type10"
+        const val SRAIL_TYPE8 = "srail_type8"
         const val NET_FUNNEL_KEY = "netFunnelKey"
     }
 }

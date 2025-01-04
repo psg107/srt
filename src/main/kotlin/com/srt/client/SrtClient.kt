@@ -2,16 +2,20 @@ package com.srt.client
 
 import com.srt.client.vo.GetNetFunnelKeyRequest
 import com.srt.client.vo.GetTicketListRequest
+import com.srt.client.vo.GetTicketListResponse
 import com.srt.client.vo.LoginRequest
-import com.srt.client.vo.LoginResponse
-import com.srt.code.StationCodes
-import com.srt.configuration.TokenHolder
+import com.srt.service.vo.SrtSession
+import com.srt.service.vo.Ticket
+import com.srt.share.code.StationCodes
+import com.srt.share.value.NetFunnelKey
+import com.srt.share.value.SessionId
+import com.srt.util.findByName
+import com.srt.util.getByName
+import com.srt.util.requestPost
 import com.srt.util.toFormUrlEncodedString
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.cookie
-import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMessageBuilder
@@ -23,30 +27,35 @@ import org.springframework.stereotype.Component
 class SrtClient(
     private val httpClient: HttpClient,
 ) {
-    suspend fun login(id: String, password: String): SessionKey {
-        return httpClient.post("$BASE_URL/apb/selectListApb01080_n.do") {
+    suspend fun login(id: String, password: String): SrtSession {
+        return httpClient.requestPost<String>("$BASE_URL/apb/selectListApb01080_n.do") {
             setDefaultUserAgent()
             contentType(ContentType.Application.FormUrlEncoded)
             accept(ContentType.Application.Json)
             setBody(LoginRequest.create(id, password).toFormUrlEncodedString())
-        }.body<LoginResponse>().let {
-            if (it.success.not()) {
-                throw RuntimeException("로그인에 실패했습니다. ${it.userMap["MSG"]}")
+        }.also {
+            if (it.cookies.size < 4) {
+                throw RuntimeException("로그인에 실패했습니다. 쿠키를 가져올 수 없습니다.")
             }
-            it.sessionId
+        }.cookies.let { cookies ->
+            SrtSession(
+                sessionId = cookies.getByName("JSESSIONID_XEBEC").value,
+                wmonid = cookies.getByName("WMONID").value,
+                srail_type10 = cookies.getByName("srail_type10", { it.value != "NULL" }).value,
+                srail_type8 = cookies.getByName("srail_type8", { it.value != "Y" }).value,
+            )
         }
     }
 
-    suspend fun getNetFunnelKey(key: SessionKey): NetFunnelKey {
-        return httpClient.post("https://nf.letskorail.com/ts.wseq") {
+    suspend fun getNetFunnelKey(sessionId: String): NetFunnelKey {
+        return httpClient.requestPost<String>("https://nf.letskorail.com/ts.wseq") {
             setDefaultUserAgent()
             contentType(ContentType.Application.FormUrlEncoded)
             accept(ContentType.Application.FormUrlEncoded)
-            cookie("JSESSIONID_ETK", key)
+            cookie("JSESSIONID_ETK", sessionId)
             setBody(GetNetFunnelKeyRequest().toFormUrlEncodedString())
-        }.body<String>().let {
-            Regex("key=(.+?)&").find(it)?.groupValues?.get(1)
-                ?: throw RuntimeException("NetFunnelKey를 가져올 수 없습니다.")
+        }.let {
+            extractNetFunnelKeyOrThrows(it.body)
         }
     }
 
@@ -56,14 +65,13 @@ class SrtClient(
         departureStationCode: StationCodes,
         arrivalStationCode: StationCodes,
         passengerNumber: Int,
-        tokenHolder: TokenHolder,
-    ): List<String> {
-        // TODO: 정상적인 경로로 접근 부탁드립니다. 오류 발생함, netFunnelKey, JSESSIONID_ETK 외 추가적으로 필요한 정보가 있음
-        return httpClient.post("$BASE_URL/ara/selectListAra10007_n.do") {
+        session: SrtSession,
+    ): Pair<SessionId, List<Ticket>> {
+        return httpClient.requestPost<GetTicketListResponse>("$BASE_URL/ara/selectListAra10007_n.do") {
             setDefaultUserAgent()
+            setAuthenticationCookies(session)
             contentType(ContentType.Application.FormUrlEncoded)
             accept(ContentType.Application.Json)
-            cookie("JSESSIONID_ETK", tokenHolder.sessionId)
             setBody(
                 GetTicketListRequest.create(
                     departureDate = departureDate,
@@ -71,32 +79,25 @@ class SrtClient(
                     departureStationCode = departureStationCode,
                     arrivalStationCode = arrivalStationCode,
                     passengerNumber = passengerNumber,
-                    netFunnelKey = tokenHolder.netFunnelKey,
+                    netFunnelKey = session.netFunnelKey!!,
                 ).toFormUrlEncodedString(),
             )
-        }.body<String>().let {
-            println(it)
-            emptyList<String>()
+        }.also {
+            if (it.body.isSuccess.not()) {
+                throw RuntimeException("티켓 목록을 가져올 수 없습니다.")
+            }
+        }.let {
+            val sessionId = SessionId((it.cookies.findByName("JSESSIONID_XEBEC")?.value ?: session.sessionId))
+            val tickets = it.body.trainListMap.map { it.toTicket() }
+
+            sessionId to tickets
         }
-//        return httpClient.post("$BASE_URL/ara/selectListAra10007_n.do") {
-//            setDefaultUserAgent()
-//            contentType(ContentType.Application.FormUrlEncoded)
-//            accept(ContentType.Application.Json)
-//            cookie("JSESSIONID_ETK", tokenHolder.sessionId)
-//            setBody(GetTicketListRequest.create(
-//                departureDate = departureDate,
-//                departureTime = departureTime,
-//                departureStationCode = departureStationCode,
-//                arrivalStationCode = arrivalStationCode,
-//                passengerNumber = passengerNumber,
-//                netFunnelKey = tokenHolder.netFunnelKey,
-//            ).toFormUrlEncodedString())
-//        }.body<GetTicketListResponse>().let {
-//            if (it.isSuccess.not()) {
-//                throw RuntimeException("티켓 목록을 가져올 수 없습니다.")
-//            }
-//            it.tickets
-//        }
+    }
+
+    private fun extractNetFunnelKeyOrThrows(body: String): NetFunnelKey {
+        return Regex("key=(.+?)&").find(body)?.groupValues?.get(1)?.let {
+            NetFunnelKey(it)
+        } ?: throw RuntimeException("NetFunnelKey를 가져올 수 없습니다.")
     }
 
     private fun HttpMessageBuilder.setDefaultUserAgent(): HttpMessageBuilder {
@@ -104,10 +105,15 @@ class SrtClient(
         return this
     }
 
+    private fun HttpMessageBuilder.setAuthenticationCookies(session: SrtSession): HttpMessageBuilder {
+        cookie("JSESSIONID_XEBEC", session.sessionId)
+        cookie("WMONID", session.wmonid)
+        cookie("srail_type10", session.srail_type10)
+        cookie("srail_type8", session.srail_type8)
+        return this
+    }
+
     companion object {
         const val BASE_URL = "https://app.srail.or.kr"
     }
 }
-
-typealias SessionKey = String
-typealias NetFunnelKey = String

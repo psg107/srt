@@ -1,7 +1,7 @@
 package com.srt.client.vo
 
-import com.srt.code.SeatType
-import com.srt.code.StationCodes
+import com.srt.share.code.SeatType
+import com.srt.share.code.StationCodes
 
 internal data class GetTicketListRequest(
     val chtnDvCd: String = "1",

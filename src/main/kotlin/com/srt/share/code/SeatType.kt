@@ -1,4 +1,4 @@
-package com.srt.code
+package com.srt.share.code
 
 enum class SeatType(val description: String, val code: String) {
     GENERAL("일반", "015"),

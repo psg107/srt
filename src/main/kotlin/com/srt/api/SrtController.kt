@@ -3,10 +3,10 @@ package com.srt.api
 import com.srt.api.vo.GetTicketListRequest
 import com.srt.api.vo.GetTicketListResponse
 import com.srt.api.vo.LoginRequest
-import com.srt.api.vo.LoginResponse
+import com.srt.api.vo.SrtResponse
 import com.srt.configuration.LoginRequired
-import com.srt.configuration.TokenHolder
 import com.srt.service.SrtService
+import com.srt.service.vo.SrtSession
 import org.springdoc.core.annotations.ParameterObject
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -21,21 +21,24 @@ class SrtController(
     private val srtService: SrtService,
 ) {
     @PostMapping("/login")
-    suspend fun login(@RequestBody loginRequest: LoginRequest): ResponseEntity<LoginResponse> {
+    suspend fun login(@RequestBody loginRequest: LoginRequest): ResponseEntity<SrtResponse<Unit>> {
         return ResponseEntity.ok(
-            LoginResponse(
-                srtService.login(loginRequest.toCommand()),
+            SrtResponse.of(
+                token = srtService.login(loginRequest.toCommand()).token,
             ),
         )
     }
 
     @LoginRequired
     @GetMapping("/list")
-    suspend fun list(@ParameterObject request: GetTicketListRequest, tokenHolder: TokenHolder): ResponseEntity<GetTicketListResponse> {
-        return ResponseEntity.ok(
-            GetTicketListResponse(
-                srtService.list(request.toQuery(), tokenHolder),
-            ),
-        )
+    suspend fun list(@ParameterObject request: GetTicketListRequest, session: SrtSession): ResponseEntity<SrtResponse<List<GetTicketListResponse>>> {
+        return srtService.list(request.toQuery(), session).let { (token, tickets) ->
+            ResponseEntity.ok(
+                SrtResponse.of(
+                    token = token.token,
+                    data = tickets.map { GetTicketListResponse.of(it) },
+                ),
+            )
+        }
     }
 }
