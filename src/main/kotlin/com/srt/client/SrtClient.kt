@@ -21,12 +21,15 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpMessageBuilder
 import io.ktor.http.contentType
 import io.ktor.http.userAgent
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
 class SrtClient(
     private val httpClient: HttpClient,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     suspend fun login(id: String, password: String): SrtSession {
         return httpClient.requestPost<String>("$BASE_URL/apb/selectListApb01080_n.do") {
             setDefaultUserAgent()
@@ -85,6 +88,9 @@ class SrtClient(
         }.also {
             if (it.body.isSuccess.not()) {
                 throw RuntimeException("티켓 목록을 가져올 수 없습니다.")
+            }
+            if (it.cookies.isNotEmpty()) {
+                log.warn("티켓 목록 조회 시 쿠키가 반환되었습니다. - ${it.cookies}")
             }
         }.let {
             val sessionId = SessionId((it.cookies.findByName("JSESSIONID_XEBEC")?.value ?: session.sessionId))
