@@ -3,7 +3,7 @@ package com.srt.api
 import com.srt.api.vo.GetTicketListRequest
 import com.srt.api.vo.GetTicketListResponse
 import com.srt.api.vo.LoginRequest
-import com.srt.api.vo.SrtResponse
+import com.srt.api.vo.LoginResponse
 import com.srt.configuration.LoginRequired
 import com.srt.service.JwtProvider
 import com.srt.service.SrtService
@@ -23,9 +23,9 @@ class SrtController(
     private val jwtProvider: JwtProvider,
 ) {
     @PostMapping("/login")
-    suspend fun login(@RequestBody loginRequest: LoginRequest): ResponseEntity<SrtResponse<Unit>> {
+    suspend fun login(@RequestBody loginRequest: LoginRequest): ResponseEntity<LoginResponse> {
         return ResponseEntity.ok(
-            SrtResponse.of(
+            LoginResponse.of(
                 token = jwtProvider.createToken(
                     srtService.login(loginRequest.toCommand()),
                 ).token,
@@ -35,13 +35,10 @@ class SrtController(
 
     @LoginRequired
     @GetMapping("/list")
-    suspend fun list(@ParameterObject request: GetTicketListRequest, session: SrtSession): ResponseEntity<SrtResponse<List<GetTicketListResponse>>> {
+    suspend fun list(@ParameterObject request: GetTicketListRequest, session: SrtSession): ResponseEntity<GetTicketListResponse> {
         return srtService.list(request.toQuery(), session).let { tickets ->
             ResponseEntity.ok(
-                SrtResponse.of(
-                    token = jwtProvider.createToken(session).token,
-                    data = tickets.map { GetTicketListResponse.of(it) },
-                ),
+                GetTicketListResponse.of(tickets),
             )
         }
     }
