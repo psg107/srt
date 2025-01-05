@@ -2,5 +2,11 @@ server:
   shutdown: graceful
   port: 8010
 
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 jwt:
   secret-key: "dev-secret-key" # secrets manager

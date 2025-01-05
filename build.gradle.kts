@@ -45,6 +45,9 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:${Versions.SPRINGDOC}")
     implementation("org.springdoc:springdoc-openapi-starter-common:${Versions.SPRINGDOC}")
 
+    // redis
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+
     // coroutine
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.COROUTINES}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:${Versions.COROUTINES}")
