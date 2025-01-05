@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 class CartService(
     private val stringRedisTemplate: StringRedisTemplate,
 ) {
+    // TODO: 티켓을 예약하기 위해 필요한 정보: StlbTrnClsfCd, TrnGpCd, DptRsStnCd, ArvRsStnCd, DptDt, DptTm, TrnNo
     fun findAll(memberNumber: String): List<String> {
         val key = generateTicketListKey(memberNumber)
 
