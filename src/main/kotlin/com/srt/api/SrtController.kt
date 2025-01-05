@@ -5,6 +5,7 @@ import com.srt.api.vo.GetTicketListResponse
 import com.srt.api.vo.LoginRequest
 import com.srt.api.vo.SrtResponse
 import com.srt.configuration.LoginRequired
+import com.srt.service.JwtProvider
 import com.srt.service.SrtService
 import com.srt.service.vo.SrtSession
 import org.springdoc.core.annotations.ParameterObject
@@ -19,12 +20,15 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class SrtController(
     private val srtService: SrtService,
+    private val jwtProvider: JwtProvider,
 ) {
     @PostMapping("/login")
     suspend fun login(@RequestBody loginRequest: LoginRequest): ResponseEntity<SrtResponse<Unit>> {
         return ResponseEntity.ok(
             SrtResponse.of(
-                token = srtService.login(loginRequest.toCommand()).token,
+                token = jwtProvider.createToken(
+                    srtService.login(loginRequest.toCommand()),
+                ).token,
             ),
         )
     }
@@ -32,10 +36,10 @@ class SrtController(
     @LoginRequired
     @GetMapping("/list")
     suspend fun list(@ParameterObject request: GetTicketListRequest, session: SrtSession): ResponseEntity<SrtResponse<List<GetTicketListResponse>>> {
-        return srtService.list(request.toQuery(), session).let { (token, tickets) ->
+        return srtService.list(request.toQuery(), session).let { tickets ->
             ResponseEntity.ok(
                 SrtResponse.of(
-                    token = token.token,
+                    token = jwtProvider.createToken(session).token,
                     data = tickets.map { GetTicketListResponse.of(it) },
                 ),
             )

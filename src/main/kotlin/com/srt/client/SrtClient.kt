@@ -13,7 +13,7 @@ import com.srt.service.vo.SrtSession
 import com.srt.service.vo.Ticket
 import com.srt.share.code.StationCodes
 import com.srt.share.value.NetFunnelKey
-import com.srt.share.value.SessionId
+import com.srt.util.PostResult
 import com.srt.util.findByName
 import com.srt.util.getByName
 import com.srt.util.requestPost
@@ -26,15 +26,12 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpMessageBuilder
 import io.ktor.http.contentType
 import io.ktor.http.userAgent
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
 class SrtClient(
     private val httpClient: HttpClient,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
-
     suspend fun login(id: String, password: String): SrtSession {
         return httpClient.requestPost<String>("$BASE_URL/apb/selectListApb01080_n.do") {
             setDefaultUserAgent()
@@ -75,35 +72,44 @@ class SrtClient(
         arrivalStationCode: StationCodes,
         passengerNumber: Int,
         session: SrtSession,
-    ): Pair<SessionId, List<Ticket>> {
-        return httpClient.requestPost<GetTicketListResponse>("$BASE_URL/ara/selectListAra10007_n.do") {
-            setDefaultUserAgent()
-            setAuthenticationCookies(session)
-            contentType(ContentType.Application.FormUrlEncoded)
-            accept(ContentType.Application.Json)
-            setBody(
-                GetTicketListRequest.create(
-                    departureDate = departureDate,
-                    departureTime = departureTime,
-                    departureStationCode = departureStationCode,
-                    arrivalStationCode = arrivalStationCode,
-                    passengerNumber = passengerNumber,
-                    netFunnelKey = session.netFunnelKey!!,
-                ).toFormUrlEncodedString(),
-            )
+    ): List<Ticket> {
+        return performWithSessionUpdate(session) {
+            httpClient.requestPost<GetTicketListResponse>("$BASE_URL/ara/selectListAra10007_n.do") {
+                setDefaultUserAgent()
+                setAuthenticationCookies(session)
+                contentType(ContentType.Application.FormUrlEncoded)
+                accept(ContentType.Application.Json)
+                setBody(
+                    GetTicketListRequest.create(
+                        departureDate = departureDate,
+                        departureTime = departureTime,
+                        departureStationCode = departureStationCode,
+                        arrivalStationCode = arrivalStationCode,
+                        passengerNumber = passengerNumber,
+                        netFunnelKey = session.netFunnelKey!!,
+                    ).toFormUrlEncodedString(),
+                )
+            }
         }.also {
-            if (it.body.isSuccess.not()) {
+            if (it.isSuccess.not()) {
                 throw RuntimeException("티켓 목록을 가져올 수 없습니다.")
             }
-            if (it.cookies.isNotEmpty()) {
-                log.warn("티켓 목록 조회 시 쿠키가 반환되었습니다. - ${it.cookies}")
-            }
         }.let {
-            val sessionId = SessionId((it.cookies.findByName(SESSION_ID)?.value ?: session.sessionId))
-            val tickets = it.body.trainListMap.map { it.toTicket() }
-
-            sessionId to tickets
+            it.trainListMap.map { it.toTicket() }
         }
+    }
+
+    private suspend fun <T> performWithSessionUpdate(
+        session: SrtSession,
+        action: suspend () -> PostResult<T>,
+    ): T {
+        val result = action()
+
+        result.cookies.findByName(SESSION_ID)?.let { cookie ->
+            session.updateSessionId(cookie.value)
+        }
+
+        return result.body
     }
 
     private fun extractNetFunnelKeyOrThrows(body: String): NetFunnelKey {
