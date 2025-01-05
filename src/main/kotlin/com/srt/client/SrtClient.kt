@@ -86,6 +86,7 @@ class SrtClient(
         passengerNumber: Int,
         session: SrtSession,
     ): List<Ticket> {
+        val netFunnelKey = getNetFunnelKey()
         return performWithSessionUpdate(session) {
             httpClient.requestPost<GetTicketListResponse>("$BASE_URL/ara/selectListAra10007_n.do") {
                 setDefaultUserAgent()
@@ -99,7 +100,7 @@ class SrtClient(
                         departureStationCode = departureStationCode,
                         arrivalStationCode = arrivalStationCode,
                         passengerNumber = passengerNumber,
-                        netFunnelKey = session.netFunnelKey!!,
+                        netFunnelKey = netFunnelKey.netFunnelKey,
                     ).toFormUrlEncodedString(),
                 )
             }
@@ -132,9 +133,6 @@ class SrtClient(
 
         result.cookies.findByName(SESSION_ID)?.let { cookie ->
             session.updateSessionId(cookie.value)
-        }
-        getNetFunnelKey().let { netFunnelKey ->
-            session.netFunnelKey = netFunnelKey.netFunnelKey
         }
 
         return result.body

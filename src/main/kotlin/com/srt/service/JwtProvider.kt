@@ -22,7 +22,6 @@ class JwtProvider(
                     WMONID to srtSession.wmonid,
                     SRAIL_TYPE10 to srtSession.srail_type10,
                     SRAIL_TYPE8 to srtSession.srail_type8,
-                    NET_FUNNEL_KEY to srtSession.netFunnelKey,
                     MEMBER_NUMBER to srtSession.memberNumber,
                 ),
             )
@@ -52,7 +51,6 @@ class JwtProvider(
                 wmonid = claims[WMONID] as String,
                 srail_type10 = claims[SRAIL_TYPE10] as String,
                 srail_type8 = claims[SRAIL_TYPE8] as String,
-                netFunnelKey = claims[NET_FUNNEL_KEY] as String,
                 memberNumber = claims[MEMBER_NUMBER] as String,
             )
         } catch (ex: Exception) {
@@ -73,6 +71,5 @@ class JwtProvider(
         const val SRAIL_TYPE10 = "srail_type10"
         const val SRAIL_TYPE8 = "srail_type8"
         const val MEMBER_NUMBER = "gs_loginMemNo"
-        const val NET_FUNNEL_KEY = "netFunnelKey"
     }
 }

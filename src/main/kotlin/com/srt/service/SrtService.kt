@@ -12,9 +12,7 @@ class SrtService(
     private val srtClient: SrtClient,
 ) {
     suspend fun login(loginCommand: LoginCommand): SrtSession {
-        return srtClient.login(loginCommand.id, loginCommand.password).apply {
-            netFunnelKey = srtClient.getNetFunnelKey().netFunnelKey
-        }
+        return srtClient.login(loginCommand.id, loginCommand.password)
     }
 
     suspend fun list(getTicketListQuery: GetTicketListQuery, session: SrtSession): List<Ticket> {
