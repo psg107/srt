@@ -14,6 +14,7 @@ class WebMvcConfiguration(
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(tokenInterceptor())
             .addPathPatterns("/srt/**")
+            .addPathPatterns("/cart/**")
             .excludePathPatterns("/health", "/srt/login")
             .pathMatcher(AntPathMatcher())
     }
