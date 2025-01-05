@@ -48,8 +48,8 @@ class SrtClient(
             SrtSession(
                 sessionId = cookies.getByName(SESSION_ID).value,
                 wmonid = cookies.getByName(WMONID).value,
-                srail_type10 = cookies.getByName(SRAIL_TYPE10, { it.value != "NULL" }).value,
-                srail_type8 = cookies.getByName(SRAIL_TYPE8, { it.value != "Y" }).value,
+                srail_type10 = cookies.getByName(SRAIL_TYPE10) { it.value != "NULL" }.value,
+                srail_type8 = cookies.getByName(SRAIL_TYPE8) { it.value != "Y" }.value,
                 memberNumber = cookies.getByName(MEMBER_NUMBER).value,
             )
         }
@@ -82,8 +82,8 @@ class SrtClient(
             if (it.isSuccess.not()) {
                 throw RuntimeException("티켓 목록을 가져올 수 없습니다.")
             }
-        }.let {
-            it.trainListMap.map { it.toTicket() }
+        }.let { response ->
+            response.trainListMap.map { it.toTicket() }
         }
     }
 

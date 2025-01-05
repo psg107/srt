@@ -81,7 +81,3 @@ fun List<SimpleCookie>.getByName(name: String): SimpleCookie {
 fun List<SimpleCookie>.getByName(name: String, predicate: (SimpleCookie) -> Boolean): SimpleCookie {
     return this.first { it.name == name && predicate(it) }
 }
-
-fun List<SimpleCookie>.findByName(name: String): SimpleCookie? {
-    return this.firstOrNull { it.name == name }
-}
