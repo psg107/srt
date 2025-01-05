@@ -12,6 +12,7 @@ import com.srt.service.vo.SrtSession
 import com.srt.service.vo.Ticket
 import com.srt.share.code.StationCodes
 import com.srt.share.value.NetFunnelKey
+import com.srt.share.value.NetFunnelKeyAcknowledgeUrl
 import com.srt.util.PostResult
 import com.srt.util.findByName
 import com.srt.util.getByName
@@ -54,12 +55,10 @@ class SrtClient(
         }
     }
 
-    suspend fun getNetFunnelKey(sessionId: String): NetFunnelKey {
+    suspend fun getNetFunnelKey(): NetFunnelKey {
         return httpClient.requestGet<String>("https://nf.letskorail.com/ts.wseq") {
             setDefaultUserAgent()
-            contentType(ContentType.Application.FormUrlEncoded)
-            accept(ContentType.Application.FormUrlEncoded)
-            cookie("JSESSIONID_ETK", sessionId)
+            cookie("referer", "https://app.srail.or.kr/")
             parameter("opcode", "5101")
             parameter("nfid", "0")
             parameter("prefix", "NetFunnel.gRtype=5101;")
@@ -67,7 +66,15 @@ class SrtClient(
             parameter("aid", "act_10")
             parameter("js", "true")
         }.let {
-            extractNetFunnelKeyOrThrows(it.body)
+            extractNetFunnelKeyOrThrows(it.body).also { (netFunnelKey, acknowledgeUrl) ->
+                netFunnelKey.acknowledge(acknowledgeUrl).let {
+                    if (it.not()) {
+                        throw RuntimeException("NetFunnelKey를 확인할 수 없습니다.")
+                    }
+                }
+            }.let { (netFunnelKey, _) ->
+                netFunnelKey
+            }
         }
     }
 
@@ -105,6 +112,18 @@ class SrtClient(
         }
     }
 
+    private suspend fun NetFunnelKey.acknowledge(acknowledgeUrl: NetFunnelKeyAcknowledgeUrl): Boolean {
+        return httpClient.requestGet<String>("https://${acknowledgeUrl.acknowledgeUrl}/ts.wseq") {
+            setDefaultUserAgent()
+            cookie("referer", "https://app.srail.or.kr/")
+            parameter("opcode", "5004")
+            parameter("key", netFunnelKey)
+            parameter("nfid", "0")
+            parameter("prefix", "NetFunnel.gRtype=5004;")
+            parameter("js", "true")
+        }.body.contains("Success")
+    }
+
     private suspend fun <T> performWithSessionUpdate(
         session: SrtSession,
         action: suspend () -> PostResult<T>,
@@ -114,17 +133,20 @@ class SrtClient(
         result.cookies.findByName(SESSION_ID)?.let { cookie ->
             session.updateSessionId(cookie.value)
         }
-        getNetFunnelKey(session.sessionId).let { netFunnelKey ->
+        getNetFunnelKey().let { netFunnelKey ->
             session.netFunnelKey = netFunnelKey.netFunnelKey
         }
 
         return result.body
     }
 
-    private fun extractNetFunnelKeyOrThrows(body: String): NetFunnelKey {
-        return Regex("key=(.+?)&").find(body)?.groupValues?.get(1)?.let {
-            NetFunnelKey(it)
-        } ?: throw RuntimeException("NetFunnelKey를 가져올 수 없습니다.")
+    private fun extractNetFunnelKeyOrThrows(body: String): Pair<NetFunnelKey, NetFunnelKeyAcknowledgeUrl> {
+        val netFunnelKey = Regex("key=(.+?)&").find(body)?.groupValues?.get(1)
+            ?: throw RuntimeException("NetFunnelKey를 가져올 수 없습니다.")
+        val acknowledgeUrl = Regex("ip=(.+?)&").find(body)?.groupValues?.get(1)
+            ?: throw RuntimeException("NetFunnelKeyAcknowledgeUrl를 가져올 수 없습니다.")
+
+        return NetFunnelKey(netFunnelKey) to NetFunnelKeyAcknowledgeUrl(acknowledgeUrl)
     }
 
     private fun HttpMessageBuilder.setDefaultUserAgent(): HttpMessageBuilder {

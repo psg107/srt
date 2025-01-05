@@ -13,7 +13,7 @@ class SrtService(
 ) {
     suspend fun login(loginCommand: LoginCommand): SrtSession {
         return srtClient.login(loginCommand.id, loginCommand.password).apply {
-            netFunnelKey = srtClient.getNetFunnelKey(this.sessionId).netFunnelKey
+            netFunnelKey = srtClient.getNetFunnelKey().netFunnelKey
         }
     }
 
