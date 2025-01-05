@@ -114,6 +114,9 @@ class SrtClient(
         result.cookies.findByName(SESSION_ID)?.let { cookie ->
             session.updateSessionId(cookie.value)
         }
+        getNetFunnelKey(session.sessionId).let { netFunnelKey ->
+            session.netFunnelKey = netFunnelKey.netFunnelKey
+        }
 
         return result.body
     }
