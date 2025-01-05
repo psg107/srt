@@ -13,6 +13,7 @@ import com.srt.service.vo.Ticket
 import com.srt.share.code.StationCodes
 import com.srt.share.value.NetFunnelKey
 import com.srt.share.value.NetFunnelKeyAcknowledgeUrl
+import com.srt.share.value.RawNetFunnelKeyBody
 import com.srt.util.getByName
 import com.srt.util.requestGet
 import com.srt.util.requestPost
@@ -98,20 +99,20 @@ class SrtClient(
                 parameter("aid", "act_10")
                 parameter("js", "true")
             }.let {
-                extractNetFunnelKeyOrThrows(it.body).also { (netFunnelKey, acknowledgeUrl) ->
-                    netFunnelKey.acknowledge(acknowledgeUrl).let {
-                        if (it.not()) {
-                            throw RuntimeException("NetFunnelKey를 확인할 수 없습니다.")
-                        }
+                RawNetFunnelKeyBody(it.body).tryExtractNetFunnelKeyAndAcknowledgeUrl()
+            }.also { (netFunnelKey, acknowledgeUrl) ->
+                netFunnelKey.acknowledge(acknowledgeUrl).let { isSuccess ->
+                    if (isSuccess.not()) {
+                        throw RuntimeException("NetFunnelKey를 확인할 수 없습니다.")
                     }
-                }.let { (netFunnelKey, _) ->
-                    netFunnelKey
                 }
+            }.let { (netFunnelKey, _) ->
+                netFunnelKey
             }
         }
     }
 
-    private fun extractNetFunnelKeyOrThrows(body: String): Pair<NetFunnelKey, NetFunnelKeyAcknowledgeUrl> {
+    private fun RawNetFunnelKeyBody.tryExtractNetFunnelKeyAndAcknowledgeUrl(): Pair<NetFunnelKey, NetFunnelKeyAcknowledgeUrl> {
         val netFunnelKey = Regex("key=(.+?)&").find(body)?.groupValues?.get(1)
             ?: throw RuntimeException("NetFunnelKey를 가져올 수 없습니다.")
         val acknowledgeUrl = Regex("ip=(.+?)&").find(body)?.groupValues?.get(1)
