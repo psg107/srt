@@ -34,10 +34,7 @@ class JwtProvider(
 
     fun verifyToken(token: JsonWebToken) {
         try {
-            val claims = buildParser().parseSignedClaims(token.token).payload
-            if (claims.expiration.before(now())) {
-                throw InvalidTokenException("로그인 세션이 만료되었습니다.")
-            }
+            buildParser().parseSignedClaims(token.token)
         } catch (ex: Exception) {
             throw InvalidTokenException("로그인 정보가 잘못되었습니다. 다시 로그인을 해주세요.", ex)
         }
@@ -65,7 +62,7 @@ class JwtProvider(
     }
 
     companion object {
-        const val TOKEN_EXPIRATION_TIME = 1000 * 60 * 60 // 1시간
+        const val TOKEN_EXPIRATION_TIME = 1000 * 60 * 60 * 5 // 5시간
         const val SESSION_ID = "JSESSIONID_XEBEC"
         const val WMONID = "WMONID"
         const val SRAIL_TYPE10 = "srail_type10"
