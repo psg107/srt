@@ -1,6 +1,5 @@
 package com.srt.client
 
-import com.srt.client.vo.GetNetFunnelKeyRequest
 import com.srt.client.vo.GetTicketListRequest
 import com.srt.client.vo.GetTicketListResponse
 import com.srt.client.vo.LoginRequest
@@ -16,11 +15,13 @@ import com.srt.share.value.NetFunnelKey
 import com.srt.util.PostResult
 import com.srt.util.findByName
 import com.srt.util.getByName
+import com.srt.util.requestGet
 import com.srt.util.requestPost
 import com.srt.util.toFormUrlEncodedString
 import io.ktor.client.HttpClient
 import io.ktor.client.request.accept
 import io.ktor.client.request.cookie
+import io.ktor.client.request.parameter
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMessageBuilder
@@ -54,12 +55,17 @@ class SrtClient(
     }
 
     suspend fun getNetFunnelKey(sessionId: String): NetFunnelKey {
-        return httpClient.requestPost<String>("https://nf.letskorail.com/ts.wseq") {
+        return httpClient.requestGet<String>("https://nf.letskorail.com/ts.wseq") {
             setDefaultUserAgent()
             contentType(ContentType.Application.FormUrlEncoded)
             accept(ContentType.Application.FormUrlEncoded)
             cookie("JSESSIONID_ETK", sessionId)
-            setBody(GetNetFunnelKeyRequest().toFormUrlEncodedString())
+            parameter("opcode", "5101")
+            parameter("nfid", "0")
+            parameter("prefix", "NetFunnel.gRtype=5101;")
+            parameter("sid", "service_1")
+            parameter("aid", "act_10")
+            parameter("js", "true")
         }.let {
             extractNetFunnelKeyOrThrows(it.body)
         }
